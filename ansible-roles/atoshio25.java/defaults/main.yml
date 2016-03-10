@@ -1,0 +1,9 @@
+---
+
+# Possible values are
+# - openjdk
+# - oracle
+java_flavor: "openjdk"
+
+# Java minor version
+java_version: 7

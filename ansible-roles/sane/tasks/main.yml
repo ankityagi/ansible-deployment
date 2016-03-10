@@ -1,0 +1,118 @@
+---
+# file: sane/tasks/main.yml
+
+- name: run 'apt-get update'
+  apt: 
+    update_cache=yes 
+    cache_valid_time={{ apt_get_update_valid_time }}
+  become: yes
+  tags:
+      - sane 
+      - sane-packages
+
+- name: update hostname
+  lineinfile: 
+    dest=/etc/hosts
+    regexp="^127\.0\.0\.1 {{ ansible_hostname }}"
+    line="127.0.0.1 {{ ansible_hostname }}"
+    insertafter="^127\.0\.0\.1 localhost"
+    owner=root 
+    group=root 
+    mode=0644
+    state=present
+    backup=yes
+  become: yes
+  tags: 
+      - sane
+      - sane-config  
+
+- name: check current timezone 
+  shell: cat /etc/timezone
+  register: current_zone
+  tags:
+      - sane  
+      - sane-config
+
+- name: set timezone 
+  copy: content={{ timezone }}
+    dest=/etc/timezone
+    owner=root
+    group=root
+    mode=0644
+    backup=yes
+  # when: current_zone.stdout != timezone
+  notify:
+      - update timezone
+  become: yes
+  tags:
+      - sane
+      - sane-config
+
+- name: ensure snmp is installed 
+  apt: name=snmpd state=present
+  become: yes
+  tags:
+      - sane
+      - sane-config
+
+- name: configure snmp
+  copy: src=snmpd.conf
+    dest=/etc/snmp/snmpd.conf
+    owner=root
+    group=root
+    mode=0600
+    backup=yes
+  notify:
+      - restart snmpd
+  become: yes
+  tags:
+      - sane
+      - sane-config
+
+- name: ensure ntp is installed
+  apt: name=ntp state=present
+  become: yes
+  tags:
+      - sane 
+      - sane-config
+
+- name: ensure ntpd is running and enabled
+  service: name=ntp state=running enabled=yes
+  become: yes
+  tags:
+      - sane 
+      - sane-config
+
+- name: ensure basic packages are installed 
+  apt: name={{ item }} state=present
+  with_items:
+      - htop
+      - git
+      - unzip
+      - byobu
+      - vim
+      - gedit
+  become: yes
+  tags:
+      - sane
+      - sane-packages
+
+- name: enable byobu
+  shell: byobu-launcher-install 
+  ignore_errors: True
+  tags:
+      - sane
+      - sane-packages
+
+- name: configure vim 
+  template: src=vimrc.j2 dest={{ ansible_env.HOME }}/.vimrc
+  tags:
+      - sane
+      - sane-packages
+
+- name: configure git
+  template: src=gitconfig.j2 dest={{ ansible_env.HOME }}/.gitconfig
+  tags:
+      - sane
+      - sane-packages
+

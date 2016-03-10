@@ -1,0 +1,5 @@
+---
+- name: running java setup playbook tests
+  hosts: localhost
+  roles:
+    - ansible-java

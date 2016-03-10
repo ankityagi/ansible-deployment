@@ -1,0 +1,38 @@
+---
+# file: haproxy/tasks/main.yml
+
+- name: run 'apt-get update'
+  apt: 
+    update_cache=yes 
+    cache_valid_time={{ apt_get_update_valid_time }}
+  become: yes
+  tags:
+      - haproxy
+
+- name: ensure basic packages are installed 
+  apt: name={{ item }} state=present
+  with_items:
+      - haproxy 
+  become: yes
+  tags:
+      - haproxy
+
+- name: enable haproxy 
+  lineinfile: dest=/etc/default/haproxy regexp="^ENABLED" line="ENABLED=1"
+  become: yes
+  tags:
+      - haproxy
+
+- name: copy haproxy configuration file 
+  template: src=haproxy.cfg
+    dest=/etc/haproxy
+    owner=root
+    group=root
+    mode=0644
+    backup=yes
+  notify: 
+      - restart haproxy 
+  become: yes
+  tags:
+      - haproxy  
+      - haproxy-config 

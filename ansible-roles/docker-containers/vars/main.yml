@@ -1,0 +1,38 @@
+---
+# file: docker-containers/vars/main.yml
+
+docker_container_n: 1
+
+# true if running containers are to be restarted (default)
+# false if running containers should not be restarted 
+docker_container_restart_containers: True
+
+docker_container_base_name: container
+docker_container_memory_limit: 2048MB
+
+docker_container_port_mapping: True
+
+# container port that is exposed (default) 
+docker_container_port: 8080
+
+# the docker host port to start from if multiple containers are deployed 
+# i.e. mapping will happen like this: 
+#
+# {{ docker_container_port_start + 0 }}:{{ docker_container_port }}
+# {{ docker_container_port_start + 1 }}:{{ docker_container_port }}
+# ... 
+#
+# when multiple containers are started 
+docker_container_port_start: 8080
+
+# regsitry 
+docker_registry_insecure: False 
+
+# internal variables 
+# determine if we should start containers 
+docker_internal_container_start: True
+# determine if we should remove server nodes
+docker_internal_container_remove: False
+docker_internal_container_idx_start: 0
+docker_internal_container_idx_end: 0
+

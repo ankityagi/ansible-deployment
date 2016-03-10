@@ -1,0 +1,41 @@
+---
+# file: grails/tasks/main.yml
+
+# - name: ensure sdkman is installed 
+#   sudo: true\
+#   shell: curl -s get.sdkman.io | bash executable=/bin/bash
+
+# - name: Make sdkman non-interactive
+#   replace: 
+#     dest=~/.sdkman/etc/config
+#     regexp="sdkman_auto_answer=false"
+#     replace="sdkman_auto_answer=true"
+#     backup=yes
+
+- name: Download Grails 2.3.7
+  sudo: true\
+  get_url: url=https://github.com/grails/grails-core/releases/download/v2.3.7/grails-2.3.7.zip dest=/tmp/grails-2.3.7.zip
+
+- name: install grails 2.3.7
+  sudo: true\
+  unarchive: src=/tmp/grails-2.3.7.zip copy=no dest=~/
+
+
+
+- name: add grails variables to $HOME/.profile
+  lineinfile: 
+    dest={{ ansible_env.HOME }}/.profile
+    regexp="{{ item.regex }}"
+    line="{{ item.line }}"
+    owner={{ user }} 
+    group={{ group }} 
+    mode=0644
+    state=present
+    backup=yes
+  with_items:
+      - { regex: '^# grails settings', line: '# grails settings' }
+      - { regex: '^GRAILS_HOME', line: 'GRAILS_HOME=~/grails-2.3.7/' }
+      - { regex: '^export GRAILS_HOME', line: 'export GRAILS_HOME' }
+      - { regex: '^export PATH=\$PATH:\$GRAILS_HOME/bin', line: 'export PATH=$PATH:$GRAILS_HOME/bin' }
+  tags: 
+      - grails

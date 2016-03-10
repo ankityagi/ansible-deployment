@@ -1,0 +1,28 @@
+---
+- name: Install zookeeper 3.4.6 
+  hosts: accumulo
+  vars:
+    username: iai
+    master: rapcor 
+  environment:
+   HADOOP_PREFIX: "{{ ansible_env.HOME }}/hadoop-2.6.0"
+   JAVA_HOME: /usr/lib/jvm/java-7-oracle/
+   ZOOKEEPER_HOME: "{{ ansible_env.HOME }}/zookeeper-3.4.6"
+  tasks:
+   - name: copy and extract zookeeper-3.4.6.tar.gz to destinations 
+     unarchive: src=files/zookeeper-3.4.6.tar.gz dest={{ ansible_env.HOME }} owner={{ username }} group={{ username }}
+   - name: create environment variables
+     lineinfile: 
+      dest: {{ ansible_env.HOME }}/.bashrc
+      insertafter: "for examples"
+      line: "export ZOOKEEPER_HOME={{ ansible_env.HOME }}/zookeeper-3.4.6"
+   - name: copy core config file
+     template: src=templates/zoo.cfg dest={{ ansible_env.HOME }}
+   - name: copy startscript
+     template: src=templates/startzookeeper.sh dest={{ ansible_env.HOME }}
+   - name: start zookeeper 
+     script: templates/startzookeeper.sh
+   - name: Install the Zookeeper service handler
+     copy: src=files/zookeeper dest=/etc/init.d/ mode=0755
+   - name: Run the Zookeeper service
+     service: name=zookeeper state=started enabled=yes

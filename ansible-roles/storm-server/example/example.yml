@@ -1,0 +1,18 @@
+---
+##Note: assume you have hosts file, ansible.cfg and group_vars with appropriate values
+- hosts: t1 
+  sudo: True
+  roles:
+    - { role: zookeeper-server }
+    - role: storm-server
+      storm_nimbus_enabled: true
+      storm_ui_enabled: true
+      nimbus_host: t1
+      zookeeper_hosts: t1
+- hosts: t2
+  sudo: True
+  roles:
+    - role: storm-server
+      storm_supervisor_enabled: true
+      nimbus_host: t1
+      zookeeper_hosts: t1

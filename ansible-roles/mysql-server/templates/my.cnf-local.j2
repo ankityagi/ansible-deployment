@@ -1,0 +1,21 @@
+[client]
+user={{ mysql_user_default_name }}
+password="{{ mysql_user_default_password }}"
+
+{% if mysql_use_ssl %}
+# SSL
+ssl_cert={{ mysql_ssl_pem_location }}/{{ mysql_ssl_client_cert_name }}
+ssl_key={{ mysql_ssl_pem_location }}/{{ mysql_ssl_client_key_name }}
+ssl_cipher=DHE-RSA-AES256-SHA
+{% endif %}
+
+[mysqldump]
+user={{ mysql_user_default_name }}
+password="{{ mysql_user_default_password }}"
+
+{% if mysql_use_ssl %}
+# SSL
+ssl_cert={{ mysql_ssl_pem_location }}/{{ mysql_ssl_client_cert_name }}
+ssl_key={{ mysql_ssl_pem_location }}/{{ mysql_ssl_client_key_name }}
+ssl_cipher=DHE-RSA-AES256-SHA
+{% endif %}

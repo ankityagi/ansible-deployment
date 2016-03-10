@@ -1,0 +1,155 @@
+---
+# file: tomcat-war/tasks/main.yml
+
+- name: build war file location path 
+  set_fact: 
+      war: "{{ tomcat_war_base }}/{{ tomcat_war }}" 
+  when: tomcat_war_base is defined and tomcat_war is defined 
+  tags:
+      - tomcat-war
+
+- name: check if 'war' variable has been defined
+  fail: msg="This play requires the variable 'war' to be defined - the war to be deployed"
+  when: war is not defined
+  tags:
+      - tomcat-war
+
+- name: build configuration file location path 
+  set_fact: 
+      config: "{{ tomcat_war_config_base }}/{{ tomcat_war_config }}"
+  when: tomcat_war_config_base is defined and tomcat_war_config is defined 
+  tags:
+      - tomcat-war
+
+- name: check if 'config' variable has been defined
+  fail: msg="This play requires the variable 'config' to be defined - the application configuration file"
+  when: config is not defined
+  tags:
+      - tomcat-war
+
+- name: ensure basic packages are installed
+  apt: name={{ item }} state=present
+  with_items:
+      - python-httplib2
+  become: yes
+  tags:
+      - tomcat-war
+
+- name: remove temporary directory 
+  file: path={{ temp_dir }} state=absent 
+  tags:
+      - tomcat-war
+
+- name: ensure a temporary directory is created
+  file:
+    path={{ temp_dir }}
+    state=directory
+    owner={{ user }}
+    group={{ group }}
+    mode=0755
+  tags:
+      - tomcat-war
+
+- name: copy war file
+  copy: src={{ war }}
+    dest={{ temp_dir }}/ROOT.war
+    owner={{ user }}
+    group={{ group }}
+    mode=0644
+  tags:
+      - tomcat-war
+
+- name: ensure the grails configuration directory is created
+  when: user != "root"
+  file:
+    path={{ ansible_env.HOME }}/.grails
+    state=directory
+    owner={{ user }}
+    group={{ group }}
+    mode=0755
+  tags:
+      - tomcat-war
+
+- name: copy configuration file (non-root user)
+  when: user != "root"
+  copy: src={{ config }}
+    dest={{ root_app_config_file }}
+    owner={{ user }}
+    group={{ group }}
+    mode=0644
+  tags:
+      - tomcat-war
+
+- name: copy configuration file (root user)
+  when: user == "root"
+  copy: src={{ config }}
+    dest=/var/lib/tomcat7/{{ root_app_config_filename }}
+    owner={{ user }}
+    group={{ group }}
+    mode=0644
+  tags:
+      - tomcat-war
+
+- name: stop tomcat
+  service: name=tomcat7 state=stopped
+  become: yes
+  tags:
+      - tomcat-war
+
+- name: delete tomcat applications
+  file: path=/var/lib/tomcat7/webapps state=absent 
+  become: yes
+  tags:
+      - tomcat-war
+
+- name: delete old resources
+  file: path=/var/lib/tomcat7/work/Catalina/localhost/ state=absent 
+  become: yes
+  tags:
+      - tomcat-war
+
+- name: create tomcat applications directory 
+  file: path=/var/lib/tomcat7/webapps state=directory owner={{ tomcat_user }} group={{ tomcat_group }}
+  become: yes
+  tags:
+      - tomcat-war
+
+- name: deploy war application
+  command: cp {{ temp_dir }}/ROOT.war /var/lib/tomcat7/webapps/ROOT.war
+  notify:
+      - clean temporary directory
+  become: yes
+  tags:
+      - tomcat-war
+
+- name: set war file permissions 
+  file: path=/var/lib/tomcat7/webapps/ROOT.war 
+    owner={{ tomcat_user }} 
+    group={{ tomcat_group }} 
+    mode=0644
+  become: yes
+  tags:
+      - tomcat-war
+
+- name: start tomcat
+  service: name=tomcat7 state=started
+  become: yes
+  tags:
+      - tomcat-war
+
+- name: wait for tomcat to start
+  wait_for: port=8080 delay=2 timeout=300
+  tags:
+      - tomcat-war
+
+# - name: check web service status
+#   uri: url=http://localhost:8080/api/ping/ status_code=200 timeout=300 return_content=yes
+#   register: response
+#   tags:
+#       - tomcat-war
+#
+# - name: validate web service response
+#   fail: msg="Web service did not return a valid response"
+#   when: "response.json.status != 'OK'"
+#   tags:
+#       - tomcat-war

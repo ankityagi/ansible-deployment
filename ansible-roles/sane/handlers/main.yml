@@ -1,0 +1,10 @@
+---
+# file: sane/handlers/main.yml
+
+- name: update timezone
+  command: dpkg-reconfigure --frontend noninteractive tzdata
+  become: yes
+  
+- name: restart snmpd
+  service: name=snmpd state=restarted enabled=yes
+  become: yes

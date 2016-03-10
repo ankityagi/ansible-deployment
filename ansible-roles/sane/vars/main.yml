@@ -1,0 +1,9 @@
+---
+# file: sane/vars/main.yml
+
+timezone: Etc/UTC
+
+git_user: Minerva User
+git_email: contact@scraawl.com 
+
+vim_tab_stop: 4

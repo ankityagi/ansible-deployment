@@ -1,0 +1,6 @@
+---
+# file: mysql-server/handlers/main.yml
+
+- name: restart mysql-server
+  service: name=mysql state=restarted enabled=yes
+  become: yes

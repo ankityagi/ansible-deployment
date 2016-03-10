@@ -1,0 +1,11 @@
+---
+# file: redis-server/vars/main.yml
+
+redis_version: 2.8.19
+
+redis_service_name: redis_6379
+
+redis_maxmemory: 0
+redis_maxmemory_policy: volatile-lru
+
+redis_flushall: False 

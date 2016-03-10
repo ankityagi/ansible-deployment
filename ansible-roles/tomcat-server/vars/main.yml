@@ -1,0 +1,4 @@
+---
+# file: tomcat-server/vars/main.yml
+
+tomcat_server_catalina_home: /var/lib/tomcat7

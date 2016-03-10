@@ -1,0 +1,5 @@
+---
+# file: java7-orcale/vars/main.yml
+
+java7_home: /usr/lib/jvm/java-7-oracle/
+

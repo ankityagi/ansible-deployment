@@ -1,0 +1,5 @@
+---
+# file: tomcat-war/meta/main.yml
+    
+dependencies:
+  - { role: tomcat-server }

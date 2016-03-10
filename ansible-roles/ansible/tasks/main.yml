@@ -1,0 +1,25 @@
+---
+# file: ansible/tasks/main.yml
+
+- name: Install Software-Properties-Common dependencies
+  apt:
+      name: software-properties-common
+      state: latest
+      install_recommends: yes
+      force: yes
+  sudo: true
+
+- name: Adding Ansible repository
+  apt_repository: 
+    repo: 'ppa:ansible/ansible'
+    state: present
+    update_cache: true
+  sudo: true
+
+- name: install Ansible
+  apt:
+      name: ansible
+      state: latest
+      install_recommends: yes
+      force: yes
+  sudo: true

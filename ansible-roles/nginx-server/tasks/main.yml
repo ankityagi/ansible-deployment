@@ -1,0 +1,19 @@
+---
+# file: nginx-server/tasks/main.yml
+
+- name: run 'apt-get update'
+  apt: 
+    update_cache=yes 
+    cache_valid_time={{ apt_get_update_valid_time }}
+  become: yes
+  tags:
+      - nginx-server
+
+- name: ensure packages are installed 
+  apt: name={{ item }} state=present 
+  become: yes
+  with_items: 
+      - nginx 
+  tags:
+      - nginx-server
+

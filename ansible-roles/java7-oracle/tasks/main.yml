@@ -1,0 +1,68 @@
+---
+# file: java7-oracle/tasks/main.yml
+
+- name: ensure python-apt is installed 
+  apt: name=python-apt state=present
+  become: yes
+  tags:
+      - java7-oracle 
+
+- name: ensure oracle ppa repository is added
+  apt_repository: repo='ppa:webupd8team/java' state=present
+  register: ppa_repository_added
+  become: yes
+  tags:
+      - java7-oracle
+
+- name: run 'apt-get update'
+  apt: 
+    update_cache=yes 
+  when: ppa_repository_added.changed
+  become: yes
+  tags:
+      - java7-oracle
+      
+- name: mark oracle license as selected 
+  debconf: 
+    name='debconf' 
+    question='shared/accepted-oracle-license-v1-1' 
+    vtype='select'
+    value='true' 
+  become: yes
+  tags:
+      - java7-oracle 
+
+- name: mark oracle license as seen 
+  debconf: 
+    name='debconf' 
+    question='shared/accepted-oracle-license-v1-1' 
+    vtype='select'
+    value='true' 
+  become: yes
+  tags:
+      - java7-oracle 
+
+- name: ensure oracle-java7-installer is installed 
+  apt: name=oracle-java7-installer state=present
+  become: yes
+  tags:
+      - java7-oracle  
+
+- name: add java variables to $HOME/.profile
+  lineinfile: 
+    dest={{ ansible_env.HOME }}/.profile
+    regexp="{{ item.regex }}"
+    line="{{ item.line }}"
+    owner={{ user }} 
+    group={{ group }} 
+    mode=0644
+    state=present
+    backup=yes
+  with_items:
+      - { regex: '^# java settings', line: '# java settings' }
+      - { regex: '^JAVA_HOME', line: 'JAVA_HOME=/usr/lib/jvm/java-7-oracle' }
+      - { regex: '^export JAVA_HOME', line: 'export JAVA_HOME' }
+      - { regex: '^export PATH=\$PATH:\$JAVA_HOME/bin', line: 'export PATH=$PATH:$JAVA_HOME/bin' }
+  tags: 
+      - java7-oracle 
+

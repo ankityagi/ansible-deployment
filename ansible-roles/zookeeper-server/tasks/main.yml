@@ -1,0 +1,19 @@
+   - name: copy and extract zookeeper-3.4.6.tar.gz to destinations 
+     unarchive: src=zookeeper-3.4.6.tar.gz dest={{ ansible_env.HOME }} owner={{ user }} group={{ group }}
+   - name: create environment variables
+     lineinfile: 
+      dest: "{{ ansible_env.HOME }}/.bashrc"
+      insertafter: "for examples"
+      line: "export ZOOKEEPER_HOME={{ ansible_env.HOME }}/zookeeper-3.4.6"
+   - name: copy core config file
+     template: src=zoo.cfg dest="{{ ansible_env.HOME }}/zookeeper-3.4.6/conf/"
+#   - name: copy startscript
+#     template: src=startzookeeper.sh dest={{ ansible_env.HOME }}
+#   - name: start zookeeper 
+#     script: startzookeeper.sh
+   - name: Install the Zookeeper service handler
+     template: src=zookeeper dest=/etc/init.d/ mode=0755
+     become: yes
+   - name: Run the Zookeeper service
+     service: name=zookeeper state=started enabled=yes
+     become: yes

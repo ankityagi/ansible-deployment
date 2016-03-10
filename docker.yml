@@ -1,0 +1,9 @@
+---
+- name: Install docker
+  hosts: all
+  roles: 
+  - {
+     role: angstwad.docker_ubuntu,
+     sudo: yes
+    }
+   

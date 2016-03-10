@@ -1,0 +1,14 @@
+---
+# file: orientdb-server/defaults/main.yml
+
+orientdb_version: 2.1.5
+orientdb_download_url: "http://orientdb.com/download.php?email=unknown@unknown.com&file=orientdb-community-{{ orientdb_version }}.tar.gz&os=linux"
+
+# properties
+orientdb_heap_size: -Xmx4048m
+orientdb_disk_cache: -Dstorage.diskCache.bufferSize=4048
+
+# file descriptors
+orientdb_users: ubuntu
+orientdb_fd_hard: 100000
+orientdb_fd_soft: 25000

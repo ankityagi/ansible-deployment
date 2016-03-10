@@ -1,0 +1,17 @@
+
+- name: copy and extract accumulo-1.6.1-bin.tar.gz to destinations
+  unarchive: src=kafka_2.10-0.8.2.1.tgz dest={{ ansible_env.HOME }} owner={{ user }} group={{ group }}
+
+#- name: Install the Kafka service handler
+#  copy: src=init.d/kafka dest=/etc/init.d/ mode=0755
+  
+#- name: Switch Scala version numbers in service handler
+#  replace: dest=/etc/init.d/kafka regexp='^export SCALA_VERSION=.*$' replace='export SCALA_VERSION={{ scala_version }}
+
+- name: copy init file
+  template: src=kafka dest=/etc/init.d/kafka
+  become: yes
+
+- name: Run the kafka service
+  service: name=kafka state=started enabled=yes
+  become: yes

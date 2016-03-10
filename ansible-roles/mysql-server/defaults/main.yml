@@ -1,0 +1,59 @@
+---
+# file: mysql-server/defaults/main.yml
+
+# number of seconds that must have passed 
+# to force 'apt-get update' 
+apt_get_update_valid_time: 28800
+
+user: root
+group: root
+
+ansible_user: ubuntu 
+
+# True if we use bind_address, False otherwise 
+mysql_bind_address: True
+# default bind address 
+mysql_bind_address_ip: 0.0.0.0
+
+mysql_server_id: 1
+mysql_replication_role: master 
+
+# default root password 
+mysql_root_password: eaV3y12g5r
+
+# default users 
+mysql_user_default_name: minerva 
+mysql_user_default_password: '#Minerva'
+
+mysql_user_replica_name: replica 
+mysql_user_replica_password: '#Minerva'
+
+# default database 
+mysql_db_default_name: minerva
+
+# default InnoDB buffer size 
+mysql_innodb_buffer_pool_size: 1G
+
+# SSL 
+mysql_use_ssl: False 
+
+# location where PEM files should be stored 
+mysql_ssl_pem_location: "{{ ansible_env.HOME }}/mysql-ssl"
+mysql_ssl_days_valid: 3650
+
+# common names (CN) to use in certificate generation 
+mysql_ssl_ca_common_name: mysql 
+mysql_ssl_server_common_name: mysql{{ mysql_server_id }}-server
+mysql_ssl_client_common_name: mysql{{ mysql_server_id }}-client
+
+mysql_ssl_ca_name: ca-cert.pem
+mysql_ssl_server_cert_name: server-cert.pem
+mysql_ssl_server_key_name: server-key.pem
+
+mysql_ssl_client_cert_name: client-cert.pem
+mysql_ssl_client_key_name: client-key.pem
+
+# values to use in MySQL SSL configuration 
+mysql_ssl_ca: /etc/mysql/{{ mysql_ssl_ca_name }}
+mysql_ssl_cert: /etc/mysql/{{ mysql_ssl_server_cert_name }}
+mysql_ssl_key: /etc/mysql/{{ mysql_ssl_server_key_name }}

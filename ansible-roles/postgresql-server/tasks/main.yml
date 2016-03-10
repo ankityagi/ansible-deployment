@@ -1,0 +1,33 @@
+---
+# file: postgresql-server/tasks/main.yml
+
+- name: install postgresql
+  apt: name="{{ item }}"
+  with_items:
+      - postgresql
+      - libpq-dev
+      - python-psycopg2
+  become: yes
+  tags:
+      - postgresql-server
+
+- name: ensure database is created
+  become: yes
+  become_user: postgres
+  postgresql_db:
+    name={{ database_name }}
+    state=present
+  tags:
+      - postgresql-server
+
+- name: ensure user has access to database
+  become: yes
+  become_user: postgres
+  postgresql_user:
+    db={{ database_name }}
+    name={{ database_user }}
+    password={{ database_user_password }}
+    priv=ALL
+    state=present
+  tags:
+      - postgresql-server

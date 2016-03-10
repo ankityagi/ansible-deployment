@@ -1,0 +1,10 @@
+---
+# file: orientdb-server/vars/main.yml
+
+# root user
+orientdb_root_user: root
+orientdb_root_password: root
+
+# installation location
+orientdb_location_base: /opt
+orientdb_location: "{{ orientdb_location_base }}/orientdb"

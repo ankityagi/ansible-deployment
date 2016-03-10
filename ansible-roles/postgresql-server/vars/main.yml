@@ -1,0 +1,11 @@
+---
+# file: postgresql-server/vars/main.yml
+
+# default database name
+database_name: default
+
+# default user
+database_user: default
+
+# default password
+database_user_password: default

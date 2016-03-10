@@ -1,0 +1,182 @@
+---
+# file: orientdb-server/tasks/main.yml
+
+- name: update soft file descriptors 
+  lineinfile: dest=/etc/security/limits.conf 
+    regexp='^{{ orientdb_users }} hard nofile.*' 
+    line='{{ orientdb_users }} hard nofile {{ orientdb_fd_hard }}' 
+    insertbefore='# End of file'
+  register: ulimits_hard
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: update soft file descriptors 
+  lineinfile: dest=/etc/security/limits.conf 
+    regexp='^{{ orientdb_users }} soft nofile.*' 
+    line='{{ orientdb_users }} soft nofile {{ orientdb_fd_soft }}' 
+    insertbefore='# End of file'
+  register: ulimits_soft
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: restart machine when ulimits changed 
+  become: yes
+  shell: shutdown -r now "Ansible updates triggered"
+  async: 0
+  poll: 0 
+  when: ulimits_hard.changed or ulimits_soft.changed 
+  ignore_errors: true
+  tags:
+    - orientdb-server
+
+- name: wait for server to come back up
+  local_action: wait_for host={{ inventory_hostname }} state=started port=22
+  when: ulimits_hard.changed or ulimits_soft.changed 
+  tags:
+    - orientdb-server
+
+- name: download orient db
+  get_url: url={{ orientdb_download_url }} dest=/tmp
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: ensure /opt installation directory exists 
+  file: path=/opt state=directory 
+  become: yes
+  tags: 
+    - orientdb-server
+
+- name: remove existing installation directory 
+  file: path={{ orientdb_location }} state=absent 
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: unpack orientdb archive 
+  unarchive: src=/tmp/orientdb-community-{{ orientdb_version }}.tar.gz 
+    dest={{ orientdb_location_base }} 
+    copy=no
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: create link to installation directory 
+  file: src={{ orientdb_location_base }}/orientdb-community-{{ orientdb_version }} 
+    path={{ orientdb_location }} 
+    state=link
+  become: yes
+  tags:
+    - orientdb-server 
+
+- name: update orientdb.sh with location
+  replace: 
+    dest={{ orientdb_location }}/bin/orientdb.sh 
+    regexp='ORIENTDB_DIR="YOUR_ORIENTDB_INSTALLATION_PATH"' 
+    replace='ORIENTDB_DIR={{ orientdb_location }}'
+    backup=yes
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: update orientdb.sh with root user
+  replace: 
+    dest={{ orientdb_location }}/bin/orientdb.sh 
+    regexp='ORIENTDB_USER="USER_YOU_WANT_ORIENTDB_RUN_WITH"' 
+    replace='ORIENTDB_USER={{ orientdb_root_user }}' 
+    backup=yes
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: update server.sh with heap size
+  lineinfile: 
+    dest={{ orientdb_location }}/bin/server.sh 
+    regexp='MAXHEAP=(.*)' 
+    line='MAXHEAP={{ orientdb_heap_size }}' 
+    backup=yes
+    state=present
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: update orientdb.sh with disk cache
+  lineinfile: 
+    dest={{ orientdb_location }}/bin/server.sh 
+    regexp='MAXDISKCACHE=(.*)' 
+    line='MAXDISKCACHE="{{ orientdb_disk_cache }}"' 
+    backup=yes
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: add root user and password to config 
+  lineinfile: 
+    dest={{ orientdb_location }}/config/orientdb-server-config.xml
+    regexp='<users>'
+    line='<users>\n <user resources="*" password="{{ orientdb_root_password }}" name="{{orientdb_root_user}}"/>' 
+    backup=yes
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: add WAL disable property to config
+  lineinfile: 
+    dest={{ orientdb_location }}/config/orientdb-server-config.xml
+    regexp='<properties>'
+    line='<properties>\n <entry value="false" name="storage.useWAL"/>' 
+    backup=yes
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: add environment dump to config
+  lineinfile: 
+    dest={{ orientdb_location }}/config/orientdb-server-config.xml
+    regexp='<properties>'
+    line='<properties>\n <entry value="true" name="environment.dumpCfgAtStartup"/>' 
+    backup=yes
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: add WAL sync disable property to config
+  lineinfile: 
+    dest={{ orientdb_location }}/config/orientdb-server-config.xml
+    regexp='<properties>'
+    line='<properties>\n <entry value="false" name="storage.wal.syncOnPageFlush"/>' 
+    backup=yes
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: copy orientdb.sh to /etc/init.d
+  command: cp {{ orientdb_location }}/bin/orientdb.sh /etc/init.d/orientdb
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: copy console.sh to /usr/bin
+  command: cp {{ orientdb_location }}/bin/console.sh /usr/bin/orientdb
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: ensure orientdb service is stopped
+  service: 
+    name=orientdb
+    state=stopped 
+  become: yes
+  tags:
+    - orientdb-server
+
+- name: ensure orientdb service is started 
+  service: 
+    name=orientdb
+    state=started 
+    enabled=yes
+  become: yes
+  tags:
+    - orientdb-server

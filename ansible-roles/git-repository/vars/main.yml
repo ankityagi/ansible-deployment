@@ -1,0 +1,5 @@
+---
+# file: git-repository/vars/main.yml
+
+git_repository_directory: ~/git
+git_repository_name: minerva

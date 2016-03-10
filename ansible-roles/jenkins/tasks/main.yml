@@ -1,0 +1,25 @@
+---
+# file: jenkins/tasks/main.yml
+
+- name: Get Jenkins key 
+  sudo: true
+  apt_key: url=https://jenkins-ci.org/debian/jenkins-ci.org.key state=present
+  # shell: wget -q -O - https://jenkins-ci.org/debian/jenkins-ci.org.key | sudo apt-key add -
+  # shell: deb http://pkg.jenkins-ci.org/debian binary/
+
+- name: adding jenkins repository
+  apt_repository: 
+    repo: 'deb http://pkg.jenkins-ci.org/debian binary/'
+    state: present
+    update_cache: true
+  sudo: true
+
+- name: install jenkins
+  apt:
+      name: jenkins
+      state: latest
+      install_recommends: yes
+      force: yes
+  sudo: true
+  # command: apt-get update
+  # command: apt-get install jenkins

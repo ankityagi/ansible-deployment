@@ -1,0 +1,93 @@
+---
+# file: redis-server/tasks/main.yml
+
+- name: run 'apt-get update'
+  apt: 
+    update_cache=yes 
+    cache_valid_time={{ apt_get_update_valid_time }}
+  become: yes
+  tags:
+      - redis-server
+
+- name: ensure basic packages are installed 
+  apt: name={{ item }} state=present
+  with_items:
+      - python-httplib2
+      - python-urllib3
+      - make
+      - build-essential
+      - tcl8.5
+  become: yes
+  tags:
+      - redis-server
+
+- name: download redis source 
+  get_url: url=http://download.redis.io/releases/redis-{{ redis_version }}.tar.gz dest=/tmp/redis-{{ redis_version }}.tar.gz
+  register: get_url_result
+  become: yes
+  tags:
+      - redis-server
+
+- name: untar redis
+  command: tar zxf /tmp/redis-{{ redis_version }}.tar.gz -C /tmp
+  when: get_url_result | changed 
+  become: yes
+  tags:
+      - redis-server
+
+- name: build and install redis
+  command: make install -C /tmp/redis-{{ redis_version }}
+  when: get_url_result | changed 
+  become: yes
+  tags:
+      - redis-server
+
+- name: make sure that required directories exist
+  file: path={{ item }} state=directory mode=0755
+  with_items: 
+      - /etc/redis
+      - /var/redis
+      - /var/redis/6379
+  become: yes
+  tags:
+      - redis-server
+
+- name: copy redis configuration file 
+  template: src=6379.conf
+    dest=/etc/redis
+    owner=root
+    group=root
+    mode=0644
+    backup=yes
+  become: yes
+  tags:
+      - redis-server 
+
+- name: install init.d script 
+  copy: src=redis_6379
+    dest=/etc/init.d
+    owner=root
+    group=root
+    mode=0755
+    backup=yes
+  notify: 
+      - restart redis-server
+  become: yes
+  tags:
+      - redis-server 
+
+- name: ensure 'redis' service is started 
+  service: name={{ redis_service_name }} state=restarted enabled=yes
+  when: redis_flushall
+  become: yes
+  tags:
+      - redis-server 
+      - redis-server-flushall
+
+- name: send 'flushall' command to redis 
+  shell: echo "FLUSHALL" | redis-cli 
+  when: redis_flushall
+  become: yes
+  tags:
+      - redis-server 
+      - redis-server-flushall

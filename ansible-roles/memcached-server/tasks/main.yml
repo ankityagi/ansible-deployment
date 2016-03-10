@@ -1,0 +1,18 @@
+---
+# file: memcached-server/tasks/main.yml
+
+- name: run 'apt-get update'
+  apt: 
+    update_cache=yes 
+    cache_valid_time={{ apt_get_update_valid_time }}
+  become: yes
+  tags:
+      - memcached-server
+
+- name: install memcached
+  apt: name={{ item }} state=present
+  with_items:
+      - memcached
+  become: yes
+  tags:
+      - memcached-server

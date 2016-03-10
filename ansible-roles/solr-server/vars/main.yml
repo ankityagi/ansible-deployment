@@ -1,0 +1,6 @@
+---
+# file: solr-server/vars/main.yml
+
+# solr version  
+solr_version: 4.10.4
+

@@ -1,0 +1,9 @@
+---
+# file: tomcat-war/handlers/main.yml
+
+- name: restart tomcat
+  service: name=tomcat7 state=restarted enabled=yes
+  become: yes
+
+- name: clean temporary directory 
+  file: path={{ temp_dir }} state=absent 

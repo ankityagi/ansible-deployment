@@ -1,0 +1,139 @@
+---
+# file: docker-containers/tasks/main.yml
+
+- name: check if 'docker_container_n' variable is larger than 0
+  fail: msg="This play requires the variable 'docker_container_n' to be larger than 0"
+  when: docker_container_n|int <= 0 
+  tags:
+      - docker-containers
+
+- name: count running containers matching the container name
+  shell: docker ps -q -f 'name={{ docker_container_base_name }}' | wc -l | awk '{print $1}'
+  # only count containers if we want to avoid restarting containers 
+  when: not docker_container_restart_containers|bool
+  register: container_count
+  become: yes
+  tags:
+      - docker-containers
+
+- name: determine if containers should be started 
+  when: container_count is defined and container_count.stdout|int >= docker_container_n|int 
+  set_fact: 
+      docker_internal_container_start=False
+  tags:
+      - docker-containers
+
+- name: start containers (with port mapping)
+  docker:
+      name: "{{ docker_container_base_name }}_{{ docker_container_port_start + item|int }}"
+      image: "{{ docker_container_image }}"
+      command: "{{ docker_container_command | default('') }}"
+      email: "{{ docker_hub_email }}"
+      username: "{{ docker_hub_username }}"
+      password: "{{ docker_hub_password }}"
+      env: "{{ docker_container_env|default({}) }}"
+      insecure_registry: "{{ docker_registry_insecure|bool }}" 
+      pull: always 
+      state: reloaded
+      restart_policy: on-failure 
+      memory_limit: "{{ docker_container_memory_limit }}"
+      ports: 
+          - "{{ docker_container_port_start + item|int }}:{{ docker_container_port }}"
+  with_sequence: start=0 end={{ docker_container_n|default(1)|int - 1 }}
+  when: docker_container_port_mapping|bool and docker_internal_container_start|bool 
+  become: yes
+  tags:
+      - docker-containers
+
+- name: start containers (without port mapping)
+  docker:
+      name: "{{ docker_container_base_name }}_{{ item|int }}"
+      image: "{{ docker_container_image }}"
+      command: "{{ docker_container_command | default('') }}"
+      email: "{{ docker_hub_email }}"
+      username: "{{ docker_hub_username }}"
+      password: "{{ docker_hub_password }}"
+      env: "{{ docker_container_env|default({}) }}"
+      insecure_registry: "{{ docker_registry_insecure|bool }}" 
+      pull: always 
+      state: reloaded
+      restart_policy: on-failure 
+      memory_limit: "{{ docker_container_memory_limit }}"
+  with_sequence: start=0 end={{ docker_container_n|default(1)|int - 1 }}
+  when: not docker_container_port_mapping|bool and docker_internal_container_start|bool  
+  become: yes
+  tags:
+      - docker-containers
+
+- name: check if /etc/haproxy/haproxy.cfg exists 
+  stat: path=/etc/haproxy/haproxy.cfg
+  register: haproxy_config_file
+  tags:
+      - docker-containers
+
+- name: count server nodes active in proxy (if installed)
+  command: grep -c "server node[0-9]" /etc/haproxy/haproxy.cfg
+  when: docker_container_port_mapping|bool and haproxy_config_file.stat.exists == True 
+  register: haproxy_server_nodes_count
+  become: yes
+  tags:
+      - docker-containers  
+
+- name: update proxy configuration (remove server nodes)
+  lineinfile: 
+    dest=/etc/haproxy/haproxy.cfg
+    regexp="server node(\d)+ (.)*" 
+    state=absent
+    owner={{ user }} 
+    group={{ group }} 
+    mode=0644
+    backup=yes
+  when: docker_container_port_mapping|bool and haproxy_config_file.stat.exists == True 
+  become: yes
+  tags:
+      - docker-containers
+
+- name: update proxy configuration (add server nodes)
+  lineinfile: 
+    dest=/etc/haproxy/haproxy.cfg
+    line="    server node{{ item|int + 1 }} 0.0.0.0:{{ docker_container_port_start + item|int }} check maxconn {{ haproxy_maxconn_local }}" 
+    state=present
+    insertafter="# server nodes"
+    owner={{ user }} 
+    group={{ group }} 
+    mode=0644
+    backup=yes
+  with_sequence: start=0 end={{ docker_container_n|default(1)|int - 1 }}
+  when: docker_container_port_mapping|bool and haproxy_config_file.stat.exists == True 
+  become: yes
+  tags:
+      - docker-containers
+
+- name: reload proxy configuration 
+  service: name=haproxy state=reloaded
+  when: docker_container_port_mapping|bool and haproxy_config_file.stat.exists == True 
+  become: yes
+  tags:
+      - docker-containers
+
+- name: set values for removing excess server nodes 
+  when: haproxy_server_nodes_count is defined and 
+        haproxy_server_nodes_count.stdout|int|default(0) > docker_container_n|int
+  set_fact: 
+      docker_internal_container_remove=True
+      docker_internal_container_idx_start={{ docker_container_n|int }}
+      docker_internal_container_idx_end={{ haproxy_server_nodes_count.stdout|int - 1 }}
+  tags:
+      - docker-containers
+
+- name: stop and remove excess containers
+  docker:
+      name: "{{ docker_container_base_name }}_{{ docker_container_port_start + item|int }}"
+      image: "{{ docker_container_image }}"
+      state: absent
+  when: docker_internal_container_remove
+  with_sequence: start={{ docker_internal_container_idx_start|int }} end={{ docker_internal_container_idx_end|int }}
+  become: yes
+  tags:
+      - docker-containers  
+

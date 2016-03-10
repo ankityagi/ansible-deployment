@@ -1,0 +1,7 @@
+---
+
+- include: openjdk.yml
+  when: java_flavor == "openjdk"
+  
+- include: oracle.yml
+  when: java_flavor == "oracle"

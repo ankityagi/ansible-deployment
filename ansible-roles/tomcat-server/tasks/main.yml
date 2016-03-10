@@ -1,0 +1,92 @@
+---
+# file: tomcat-server/tasks/main.yml
+
+- name: ensure tomcat7 is installed 
+  apt: name=tomcat7 state=present
+  become: yes
+  tags:
+      - tomcat-server 
+
+- name: update external configuration file location 
+  set_fact: 
+      root_app_config_file={{ tomcat_server_catalina_home }}/{{ root_app_config_filename }}
+  when: user == "root" and root_app_config_file == "{{ ansible_env.HOME }}/.grails/{{ root_app_config_filename }}"
+  tags:
+      - tomcat-server 
+
+- name: configure tomcat 
+  template: 
+    src=tomcat7.j2 
+    dest=/etc/default/tomcat7
+    owner=root
+    group=root
+    mode=0644
+  notify:
+      - restart tomcat
+  become: yes 
+  tags:
+      - tomcat-server 
+      - tomcat-server-config 
+
+- name: ensure tomcat 'lib' directory exists 
+  file: path={{ tomcat_server_catalina_home }}/lib
+    state=directory 
+    owner=tomcat7
+    group=tomcat7
+    mode=0755
+  become: yes 
+  tags:
+      - tomcat-server 
+
+- name: download libraries for redis session replication 
+  get_url: url={{ item }} dest={{ tomcat_server_catalina_home }}/lib 
+  when: tomcat_server_redis_replication
+  with_items: 
+      - https://github.com/rmohr/tomcat-redis-session-manager/releases/download/2.0-tomcat-7/tomcat-redis-session-manager-2.0.0.jar
+      - http://central.maven.org/maven2/redis/clients/jedis/2.7.3/jedis-2.7.3.jar
+      - http://central.maven.org/maven2/org/apache/commons/commons-pool2/2.4.2/commons-pool2-2.4.2.jar 
+  become: yes 
+  tags:
+      - tomcat-server 
+
+- name: set permissions on downloaded libraries 
+  file: path={{ tomcat_server_catalina_home }}/lib/{{ item }} 
+    owner=tomcat7 
+    group=tomcat7 
+    mode=0640 
+  when: tomcat_server_redis_replication
+  with_items: 
+      - tomcat-redis-session-manager-2.0.0.jar
+      - jedis-2.7.3.jar
+      - commons-pool2-2.4.2.jar 
+  become: yes 
+  tags:
+      - tomcat-server 
+
+- name: configure tomcat without redis session replication 
+  template: src=context.xml.j2
+    dest=/var/lib/tomcat7/conf/context.xml 
+    owner=root
+    group=tomcat7
+    mode=0644
+    backup=yes 
+  when: not tomcat_server_redis_replication
+  notify:
+      - restart tomcat
+  become: yes 
+  tags:
+      - tomcat-server 
+
+- name: configure tomcat for redis session replication 
+  template: src=context-redis.xml.j2
+    dest=/var/lib/tomcat7/conf/context.xml 
+    owner=root
+    group=tomcat7
+    mode=0644
+    backup=yes 
+  when: tomcat_server_redis_replication
+  notify:
+      - restart tomcat
+  become: yes 
+  tags:
+      - tomcat-server 

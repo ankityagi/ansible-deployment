@@ -1,0 +1,4 @@
+---
+# file: tomcat-war/vars/main.yml
+
+temp_dir: "{{ ansible_env.HOME }}/.tomcat-deployment-temp"

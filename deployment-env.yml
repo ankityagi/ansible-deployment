@@ -1,0 +1,16 @@
+---
+- name: Install New Software  
+  hosts: 12.12.12.3
+  # hosts: vulcan-dev
+  vars:
+            user: iaicto7
+            group: iaicto7
+            ansible_ssh_user: iaicto7
+  roles:   
+  - {role: sane,
+     apt_get_update_valid_time : "3600"
+     }
+  - role: java7-oracle
+  - role: grails
+  - role: ansible
+  - role: jenkins

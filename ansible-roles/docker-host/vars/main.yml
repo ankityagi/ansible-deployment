@@ -1,0 +1,4 @@
+---
+# file: docker-host/vars/main.yml
+
+docker_reinstall: False 

@@ -1,0 +1,13 @@
+---
+- name: Install New Software  
+  hosts: vulcan-dev
+  vars:
+            user: ubuntu
+            group: ubuntu
+            ansible_ssh_user: ubuntu
+  roles:   
+  - {role: sane,
+     apt_get_update_valid_time : "3600"
+     }
+  # - role: java7-oracle
+  - role: mysql-server

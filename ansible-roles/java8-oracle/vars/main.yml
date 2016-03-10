@@ -1,0 +1,5 @@
+---
+# file: java8-orcale/vars/main.yml
+
+java8_home: /usr/lib/jvm/java-8-oracle/
+

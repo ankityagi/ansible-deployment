@@ -1,0 +1,116 @@
+---
+# file: solr-server/tasks/main.yml
+
+- name: download solr archive
+  get_url: 
+    url=http://www.eu.apache.org/dist/lucene/solr/{{ solr_version }}/solr-{{ solr_version }}.tgz
+    dest=/home/ubuntu/solr-{{ solr_version }}.tgz
+    owner=ubuntu
+  become: yes 
+  tags: 
+      - solr-server 
+
+- name: ensure tar is installed
+  apt: name=tar state=present
+  become: yes
+  tags:
+      - solr-server
+
+- name: make directory to unarchive into
+  file:
+    state=directory
+    path=/home/ubuntu/solr
+  become: yes
+      - solr-server
+    
+- name: unpack the archive
+  unarchive: 
+    src=/home/ubuntu/solr-{{ solr_version }}.tgz
+    dest=/home/ubuntu/solr
+    copy=no
+  become: yes
+  tags: 
+      - solr-server
+
+- name: copy the solr to versionless directory
+  command: cp /home/ubuntu/solr/solr-{{ solr_version }}/ /home/ubuntu/solr/solr/ -r
+  become: yes
+  notify:
+      - restart tomcat
+  tags:
+      - solr-server
+
+- name: copy the solr to usr/share
+  command: mv /home/ubuntu/solr/solr/ /usr/share/solr/
+  become: yes
+  notify:
+      - restart tomcat
+  tags:
+      - solr-server
+
+- name: copy the solr war file
+  command: cp /usr/share/solr/example/webapps/solr.war /usr/share/solr/example/example-DIH/solr/solr.war
+  become: yes
+  notify:
+      - restart tomcat
+  tags: 
+      - solr-server
+    
+- name: copy the solr libraries into tomcat
+  shell: cp /usr/share/solr/example/lib/ext/* /usr/share/tomcat7/lib/
+  become: yes
+  tags: 
+      - solr-server
+    
+- name: copy solr log4j properties file into tomcat
+  command: cp /usr/share/solr/example/resources/log4j.properties /usr/share/tomcat7/lib/log4j.properties
+  become: yes
+  tags: 
+      - solr-server
+    
+- name: configure the solr log4j log file location 
+  lineinfile: 
+    dest=/usr/share/tomcat7/lib/log4j.properties
+    regexp="^solr.log" 
+    line="solr.log=/usr/share/solr"
+  become: yes
+  tags: 
+    - solr-server
+    
+- name: make solr log4j properties file readable 
+  file: 
+    path=/usr/share/tomcat7/lib/log4j.properties 
+    owner=tomcat7 
+    mode=0644
+  become: yes
+  tags: 
+      - solr-server
+  
+- name: create solr configs
+  template:
+    src=solr.xml.j2
+    dest=/etc/tomcat7/Catalina/localhost/solr.xml
+    owner=tomcat7
+    mode=0644
+  become: yes
+  tags:
+      - solr-server
+
+- name: add a solr user to tomcat
+  lineinfile: 
+    dest=/etc/tomcat7/tomcat-users.xml
+    regexp="^<tomcat-users>"
+    line="<tomcat-users>\n<role rolename=\"manager-gui\"/>\n<user username=\"admin\" password=\"admin\" roles=\"manager-gui\"/>\n"
+  become: yes
+  tags: 
+      - solr-server
+
+- name: ensure that tomcat7 is the owner of the exampleDIH directory
+  file: 
+    path=/usr/share/solr/example/example-DIH/solr
+    owner=tomcat7
+    recurse=yes
+  become: yes
+  tags: 
+      - solr-server
+

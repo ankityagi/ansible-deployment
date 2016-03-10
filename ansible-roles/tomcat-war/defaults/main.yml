@@ -1,0 +1,5 @@
+---
+# file: tomcat-war/defaults/main.yml
+
+tomcat_user: tomcat7
+tomcat_group: tomcat7

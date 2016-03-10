@@ -1,0 +1,5 @@
+---
+- name: installing openJDK java
+  apt: 
+    name: "openjdk-{{ java_version }}-jdk"
+    state: latest

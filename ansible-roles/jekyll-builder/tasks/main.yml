@@ -1,0 +1,51 @@
+---
+# file: jekyll-builder/tasks/main.yml
+
+- name: run 'apt-get update'
+  apt: 
+    update_cache=yes 
+    cache_valid_time={{ apt_get_update_valid_time }}
+  become: yes
+  tags:
+      - jekyll-builder
+
+- name: ensure packages are installed 
+  apt: name={{ item }} state=present 
+  with_items: 
+      - build-essential
+      - ruby2.0 
+      - ruby2.0-dev 
+      - make 
+      - gcc 
+      - g++ 
+      - nodejs
+      - libz-dev
+      - python3
+  become: yes
+  tags:
+      - jekyll-builder
+
+- name: symlink exists for ruby 2.0
+  file: src=/usr/bin/ruby2.0 dest=/usr/local/bin/ruby state=link
+  become: yes
+  tags:
+      - jekyll-builder
+
+- name: symlink exists for ruby gems 2.0
+  file: src=/usr/bin/gem2.0 dest=/usr/local/bin/gem state=link
+  become: yes
+  tags:
+      - jekyll-builder
+
+- name: install jekyll dependencies 
+  gem: name={{ item.name }} version={{ item.version }} state=present
+  with_items: 
+      - { name: 'jekyll-lunr-js-search', version: '0.3.0' }
+  tags:
+      - jekyll-builder
+
+- name: install jekyll
+  gem: name=jekyll version=2.5.3 state=present 
+  tags:
+      - jekyll-builder
+

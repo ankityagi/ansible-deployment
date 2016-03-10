@@ -1,0 +1,17 @@
+---
+- name: adding WebUpd8 java repository
+  apt_repository: 
+    repo: ppa:webupd8team/java 
+    state: present
+    update_cache: true
+  sudo: true
+  
+- name: acceptance terms of oracle java
+  shell: echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+  changed_when: false
+  
+- name: installing Oracle java
+  apt: 
+    name: oracle-java{{ java_version }}-installer
+    state: latest
+  sudo: true

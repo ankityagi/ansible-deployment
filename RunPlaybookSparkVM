@@ -1,0 +1,1 @@
+ansible-playbook -i sparkvmhost newvm.yml -u iaicto7 --ask-sudo-pass

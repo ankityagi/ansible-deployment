@@ -1,0 +1,5 @@
+---
+# file: tomcat-server/meta/main.yml
+    
+dependencies:
+  - { role: java7-oracle }

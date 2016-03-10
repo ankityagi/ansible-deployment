@@ -1,0 +1,6 @@
+---
+# file: orientdb-server/handlers/main.yml
+
+- name: restart orientdb
+  service: name=orientdb state=restarted enabled=yes
+  become: yes

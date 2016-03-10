@@ -1,0 +1,6 @@
+---
+# file: redis-server/handlers/main.yml
+
+- name: restart redis-server
+  service: name={{ redis_service_name }} state=restarted enabled=yes
+  become: yes

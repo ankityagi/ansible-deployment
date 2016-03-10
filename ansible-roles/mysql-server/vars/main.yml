@@ -1,0 +1,5 @@
+---
+# file: mysql-server/vars/main.yml
+
+mysql_db_default_encoding: utf8mb4
+mysql_db_default_collation: utf8mb4_general_ci

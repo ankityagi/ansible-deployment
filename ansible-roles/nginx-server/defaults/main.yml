@@ -1,0 +1,6 @@
+---
+# file: nginx-server/defaults/main.yml
+
+# number of seconds that must have passed 
+# to force 'apt-get update' 
+apt_get_update_valid_time: 28800

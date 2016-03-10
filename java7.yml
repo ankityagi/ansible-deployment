@@ -1,0 +1,9 @@
+---
+- name: Intall JAVA 7  
+  hosts: all
+  roles: 
+  - {
+     role: ansiblebit.oracle-java
+     oracle_java_version_string: "1.8.0_60 "
+     }
+   

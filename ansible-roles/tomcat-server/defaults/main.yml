@@ -1,0 +1,25 @@
+---
+# file: tomcat-server/defaults/main.yml
+
+root_app_config_filename: tomcat-root-application-config.groovy
+root_app_config_env_var: TOMCAT_ROOT_CONFIG
+root_app_config_file: "{{ ansible_env.HOME }}/.grails/{{ root_app_config_filename }}"
+
+java_param_xms: 512M
+java_param_xmx: 4G
+java_param_max_perm_size: 512M
+
+# true if the tomcat should support Redis replication 
+# (Redis must be setup separately) 
+# 
+# NOTE: Will override existing /var/lib/tomcat7/conf/context.xml 
+tomcat_server_redis_replication: False 
+
+# Redis server details 
+tomcat_server_redis_host: 127.0.0.1
+tomcat_server_redis_port: 6379
+tomcat_server_redis_database: 0
+
+# when session should expire from Redis (seconds)
+tomcat_server_redis_inactive_interval: 30 
+

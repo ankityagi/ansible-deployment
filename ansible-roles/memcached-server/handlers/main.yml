@@ -1,0 +1,6 @@
+---
+# file: memcached-server/handlers/main.yml
+
+- name: restart memcached-server
+  service: name=memcached state=restarted enabled=yes
+  become: yes

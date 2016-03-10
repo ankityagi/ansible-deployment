@@ -1,0 +1,6 @@
+---
+# file: java8-orcale/defaults/main.yml
+
+# owner and group for $HOME/.profile
+user: "{{ ansible_user }}"
+group: "{{ ansible_user }}"

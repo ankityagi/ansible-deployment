@@ -1,0 +1,48 @@
+---
+# file: docker-host/tasks/main.yml
+
+- name: ensure python-pip is installed 
+  apt: name=python-pip state=present
+  become: yes
+  tags:
+      - docker-host 
+
+- name: install python module 'docker-py'
+  pip: name=docker-py 
+  become: yes
+  tags:
+      - docker-host 
+
+- name: update grub configuration 
+  lineinfile: 
+    dest=/etc/default/grub
+    regexp="^GRUB_DISABLE_OS_PROBER" 
+    line="GRUB_DISABLE_OS_PROBER=true"
+    owner=root
+    group=root
+    mode=0644
+    state=present
+    backup=yes
+  become: yes
+  tags:
+      - docker-host 
+
+- name: check if 'docker' service exists
+  stat: path=/etc/init.d/docker 
+  register: service_status
+  become: yes
+  tags:
+      - docker-host 
+
+- name: download and run docker installation script
+  shell: curl -sSL https://get.docker.com/ | sh
+  when: not service_status.stat.exists or {{ docker_reinstall }}
+  become: yes
+  tags:
+      - docker-host
+
+- name: add current user to the docker group 
+  command: usermod -aG docker {{ user }}
+  become: yes
+  tags:
+      - docker-host

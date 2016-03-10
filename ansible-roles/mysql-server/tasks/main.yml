@@ -1,0 +1,212 @@
+---
+# file: mysql-server/tasks/main.yml
+
+- name: run 'apt-get update'
+  apt: 
+    update_cache=yes 
+    cache_valid_time={{ apt_get_update_valid_time }}
+  become: yes
+  tags:
+      - mysql-server 
+
+- name: set mysql-server-5.6 root password
+  debconf: 
+    name='mysql-server-5.6' 
+    question='mysql-server/root_password' 
+    vtype='password'
+    value='{{ mysql_root_password | quote }}' 
+  become: yes
+  tags:
+      - mysql-server 
+
+- name: confirm mysql-server-5.6 root password
+  debconf: 
+    name='mysql-server-5.6' 
+    question='mysql-server/root_password_again' 
+    vtype='password'
+    value='{{ mysql_root_password | quote }}' 
+  become: yes
+  tags:
+      - mysql-server 
+
+- name: ensure mysql-server-5.6 is installed 
+  apt: name=mysql-server-5.6 state=present
+  become: yes
+  tags:
+      - mysql-server 
+
+- name: ensure openssl is installed 
+  apt: name=openssl state=present
+  become: yes
+  when: mysql_use_ssl
+  tags:
+      - mysql-server 
+
+- name: copy configuration file for mysql-server-5.6 
+  template: src=my.cnf-global.j2
+    dest=/etc/mysql/my.cnf
+    owner=root
+    group=root
+    mode=0644
+    backup=yes
+  become: yes
+  notify:
+      - restart mysql-server
+  tags:
+      - mysql-server 
+
+- name: create folder to hold certificates and keys 
+  file: path={{ mysql_ssl_pem_location }} state=directory 
+  when: mysql_use_ssl
+  tags:
+      - mysql-server 
+
+- name: copy SSL certicate and key generation script 
+  template: src=openssl-script.sh 
+    dest={{ mysql_ssl_pem_location }} 
+    owner={{ user }}
+    group={{ group }}
+    mode=0744
+  when: mysql_use_ssl
+  tags:
+      - mysql-server 
+
+- name: generate ssl certificates and keys 
+  shell: "{{ mysql_ssl_pem_location }}/openssl-script.sh" 
+  when: mysql_use_ssl
+  tags:
+      - mysql-server 
+
+- name: copy ssl certificates and keys to mysql directory 
+  shell: cp {{ mysql_ssl_pem_location }}/{{ mysql_ssl_ca_name }} {{ mysql_ssl_ca }} && cp {{ mysql_ssl_pem_location }}/{{ mysql_ssl_server_cert_name }} {{ mysql_ssl_cert }} && cp {{ mysql_ssl_pem_location }}/{{ mysql_ssl_server_key_name }} {{ mysql_ssl_key }}
+  become: yes
+  when: mysql_use_ssl
+  tags:
+      - mysql-server 
+
+- name: clean-up SSL certicate and key generation script 
+  file: path={{ item }} state=absent
+  become: yes
+  when: mysql_use_ssl
+  with_items: 
+      - "{{ mysql_ssl_pem_location }}/openssl-script.sh" 
+  tags:
+      - mysql-server 
+
+- name: restart mysql service when SSL is configured 
+  service: name=mysql state=restarted 
+  become: yes
+  when: mysql_use_ssl
+  tags:
+      - mysql-server 
+
+- name: ensure mysql is running and enabled
+  service: name=mysql state=running enabled=yes
+  become: yes
+  tags: 
+      - mysql-server 
+
+- name: ensure python-mysqldb is installed 
+  apt: name=python-mysqldb state=present
+  become: yes
+  tags:
+      - mysql-server 
+
+- name: configure ~/.my.cnf
+  when: user == "root"
+  template: 
+    src=my.cnf-local.j2
+    dest=/{{ user }}/.my.cnf
+    owner={{ user }}
+    group={{ group }}
+    mode=0600
+  tags:
+      - mysql-server 
+
+- name: configure ~/.my.cnf
+  when: user != "root"
+  template: 
+    src=my.cnf-local.j2
+    dest=/home/{{ user }}/.my.cnf
+    owner={{ user }}
+    group={{ group }}
+    mode=0600
+  tags:
+      - mysql-server 
+
+- name: wait one minute to prevent timing issues with certificates 
+  pause: minutes=1
+  when: mysql_use_ssl
+  tags:
+      - mysql-server 
+
+- name: create default database user
+  mysql_user: 
+    host=%
+    login_user=root
+    login_password="{{ mysql_root_password }}"
+    name="{{ mysql_user_default_name }}"
+    password="{{ mysql_user_default_password }}"
+    priv="*.*:ALL"
+    state=present
+  tags:
+      - mysql-server 
+      - mysql-server-create-users
+
+- name: add require ssl requirements to default database user
+  mysql_user: 
+    host=%
+    login_user=root
+    login_password="{{ mysql_root_password }}"
+    name="{{ mysql_user_default_name }}"
+    password="{{ mysql_user_default_password }}"
+    priv="*.*:REQUIRESSL"
+    append_privs=true 
+    state=present
+  when: mysql_use_ssl
+  tags:
+      - mysql-server 
+      - mysql-server-create-users
+
+- name: create 'replica' database user
+  mysql_user: 
+    host=%
+    login_user=root
+    login_password={{ mysql_root_password }}
+    name={{ mysql_user_replica_name }}
+    password={{ mysql_user_replica_password }}
+    priv="*.*:REPLICATION SLAVE,REPLICATION CLIENT"
+    state=present
+  tags:
+      - mysql-server 
+      - mysql-server-create-users
+
+- name: add require ssl requirements to 'replica' database user
+  mysql_user: 
+    host=%
+    login_user=root
+    login_password={{ mysql_root_password }}
+    name={{ mysql_user_replica_name }}
+    password={{ mysql_user_replica_password }}
+    priv="*.*:REQUIRESSL"
+    append_privs=true 
+    state=present
+  when: mysql_use_ssl
+  tags:
+      - mysql-server 
+      - mysql-server-create-users
+
+- name: create default database
+  mysql_db: 
+    login_user={{ mysql_user_default_name }}
+    login_password={{ mysql_user_default_password }}
+    ssl_cert={{ mysql_ssl_pem_location }}/client-cert.pem
+    ssl_key={{ mysql_ssl_pem_location }}/client-key.pem
+    name={{ mysql_db_default_name }} 
+    encoding={{ mysql_db_default_encoding }}
+    collation={{ mysql_db_default_collation }}
+    state=present
+  tags:
+      - mysql-server 
+      - mysql-server-create-db 
+

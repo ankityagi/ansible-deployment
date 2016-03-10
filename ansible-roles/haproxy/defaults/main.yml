@@ -1,0 +1,22 @@
+---
+# file: haproxy/defaults/main.yml
+
+# number of seconds that must have passed 
+# to force 'apt-get update' 
+apt_get_update_valid_time: 28800
+
+# true if proxy uses 0.0.0.0 as host, false otherwise
+haproxy_local: False 
+
+haproxy_maxconn_global: 10000
+haproxy_maxconn_local: 100
+
+haproxy_timeout_connect: 5s
+haproxy_timeout_client: 60s
+haproxy_timeout_server: 60s
+haproxy_timeout_queue: 60s
+
+# algorithms: roundrobin, leastconn
+haproxy_algorithm: roundrobin
+
+haproxy_target_port: 8080
